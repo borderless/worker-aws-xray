@@ -1,6 +1,6 @@
 {
   "name": "@borderless/worker-aws-xray",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "AWS X-Ray client for Cloudflare Workers using `fetch`",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
