@@ -31,6 +31,221 @@ export interface UnprocessedSegments {
 }
 
 /**
+ * AWS segment definition.
+ */
+export interface SegmentJson extends SubsegmentJson {
+  /**
+   * A unique identifier that connects all segments and subsegments originating from a single client request.
+   */
+  trace_id: string;
+  /**
+   * An object with information about your application.
+   */
+  service?: {
+    /**
+     * A string that identifies the version of your application that served the request.
+     */
+    version: string;
+  };
+  /**
+   * A string that identifies the user who sent the request.
+   */
+  user?: string;
+  /**
+   * A subsegment ID you specify if the request originated from an instrumented application. The X-Ray SDK adds the parent subsegment ID to the tracing header for downstream HTTP calls. In the case of nested subsegments, a subsegment can have a segment or a subsegment as its parent.
+   */
+  parent_id?: string;
+}
+
+/**
+ * AWS segment HTTP definition.
+ */
+export interface SegmentHttpJson {
+  request?: {
+    url?: string;
+    method?: string;
+    user_agent?: string;
+    client_ip?: string;
+    x_forwarded_for?: boolean;
+    traced?: boolean;
+  };
+  response?: {
+    status?: number;
+    content_length?: number;
+  };
+}
+
+/**
+ * AWS sub-segment definition.
+ */
+export interface SubsegmentJson {
+  /**
+   * The logical name of the service that handled the request, up to 200 characters. For example, your application's name or domain name. Names can contain Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @.
+   */
+  name: string;
+  /**
+   * A 64-bit identifier for the segment, unique among segments in the same trace, in 16 hexadecimal digits.
+   */
+  id: string;
+  /**
+   * That is the time the segment was created, in floating point seconds in epoch time. For example, `1480615200.010` or `1.480615200010E9`. Use as many decimal places as you need. Microsecond resolution is recommended when available.
+   */
+  start_time: number;
+  /**
+   * That is the time the segment was closed. For example, `1480615200.090` or `1.480615200090E9`. Specify either an `end_time` or `in_progress`.
+   */
+  end_time?: number;
+  /**
+   * Set to `true` instead of specifying an `end_time` to record that a segment is started, but is not complete. Send an in-progress segment when your application receives a request that will take a long time to serve, to trace the request receipt. When the response is sent, send the complete segment to overwrite the in-progress segment. Only send one complete segment, and one or zero in-progress segments, per request.
+   */
+  in_progress?: boolean;
+  /**
+   * Object with key-value pairs that you want X-Ray to index for search.
+   */
+  annotations?: Record<string, string | number | boolean>;
+  /**
+   * Object with any additional data that you want to store in the segment.
+   */
+  metadata?: Record<string, unknown>;
+  /**
+   * Array of subsegment objects.
+   */
+  subsegments?: SubsegmentJson[];
+  /**
+   * HTTP objects with information about the original HTTP request.
+   */
+  http?: SegmentHttpJson;
+  /**
+   * Indicates that a client error occurred (response status code was 4XX Client Error).
+   */
+  error?: boolean;
+  /**
+   * Indicates that a server error occurred (response status code was 5XX Server Error).
+   */
+  fault?: boolean;
+  /**
+   * Indicates that a request was throttled (response status code was 429 Too Many Requests).
+   */
+  throttle?: boolean;
+  /**
+   * A cause can be either a 16 character exception ID or an object.
+   */
+  cause?: string | SegmentCauseJson;
+}
+
+/**
+ * HTTP segment request.
+ */
+export interface SegmentHttpRequest {
+  /**
+   * The full URL of the request, compiled from the protocol, hostname, and path of the request.
+   */
+  url?: string;
+  /**
+   * The request method. For example, `GET`.
+   */
+  method?: string;
+  /**
+   * The user agent string from the requester's client.
+   */
+  userAgent?: string;
+  /**
+   * The IP address of the requester. Can be retrieved from the IP packet's Source Address or, for forwarded requests, from an `X-Forwarded-For` header.
+   */
+  clientIp?: string;
+  /**
+   * Boolean indicating that the client_ip was read from an X-Forwarded-For header and is not reliable as it could have been forged (segments only).
+   */
+  xForwardedFor?: boolean;
+  /**
+   * Boolean indicating that the downstream call is to another traced service. If this field is set to true, X-Ray considers the trace to be broken until the downstream service uploads a segment with a parent_id that matches the id of the subsegment that contains this block (subsegments only).
+   */
+  traced?: boolean;
+}
+
+/**
+ * HTTP segment response.
+ */
+export interface SegmentHttpResponse {
+  /**
+   * Number indicating the HTTP status of the response.
+   */
+  status?: number;
+  /**
+   * Number indicating the length of the response body in bytes.
+   */
+  contentLength?: number;
+}
+
+export interface StackFrameJson {
+  /**
+   * The relative path to the file.
+   */
+  path?: string;
+  /**
+   * The line in the file.
+   */
+  line?: number;
+  /**
+   * The function or method name.
+   */
+  label?: string;
+}
+
+export interface SegmentExceptionJson {
+  /**
+   * A 64-bit identifier for the exception, unique among segments in the same trace, in 16 hexadecimal digits.
+   */
+  id: string;
+  /**
+   * The exception message.
+   */
+  message?: string;
+  /**
+   * The exception type.
+   */
+  type?: string;
+  /**
+   * Indicates that the exception was caused by an error returned by a downstream service.
+   */
+  remote?: boolean;
+  /**
+   * Indicates the number of stack frames that are omitted from the stack.
+   */
+  truncated?: number;
+  /**
+   * Indicates the number of exceptions that were skipped between this exception and its child, that is, the exception that it caused.
+   */
+  skipped?: number;
+  /**
+   * Exception ID of the exception's parent, that is, the exception that caused this exception.
+   */
+  cause?: string;
+  /**
+   * Array of `StackFrame` objects.
+   */
+  stack?: StackFrameJson[];
+}
+
+/**
+ * Segment cause JSON definition.
+ */
+export interface SegmentCauseJson {
+  /**
+   * The full path of the working directory when the exception occurred.
+   */
+  working_directory?: string;
+  /**
+   * The array of paths to libraries or modules in use when the exception occurred.
+   */
+  paths?: string[];
+  /**
+   * The array of exception objects.
+   */
+  exceptions?: SegmentExceptionJson[];
+}
+
+/**
  * AWS unprocessed segments error wrapper.
  */
 export class UnprocessedError extends Error {
@@ -49,69 +264,68 @@ export class SubsegmentNotEndedError extends TypeError {
 }
 
 /**
- * AWS segment definition.
+ * Capture stack frames from an error instance.
  */
-export type SegmentJSON = SubsegmentJSON & {
-  trace_id: string;
-  service?: { version: string };
-  user?: string;
-  parent_id?: string;
-};
+export function captureStackFrames(error: Error): StackFrameJson[] {
+  return getErrorStack(error).map(
+    (frame): StackFrameJson => ({
+      path: frame.getFileName() ?? undefined,
+      line: frame.getLineNumber() ?? undefined,
+      label: frame.getFunctionName() ?? undefined,
+    })
+  );
+}
 
 /**
- * AWS segment HTTP definition.
+ * Create a segment exception object from an error instance.
  */
-export type SegmentHttpJSON = {
-  request?: {
-    url?: string;
-    method?: string;
-    user_agent?: string;
-    client_ip?: string;
-    x_forwarded_for?: boolean;
-    traced?: boolean;
+export function captureException(
+  error: Error,
+  cause?: string
+): SegmentExceptionJson {
+  return {
+    id: generateId(16),
+    message: error.message,
+    cause: cause,
+    stack: captureStackFrames(error),
   };
-  response?: {
-    status?: number;
-    content_length?: number;
-  };
-};
+}
 
 /**
- * AWS sub-segment definition.
+ * Segment `cause` wrapper.
  */
-export type SubsegmentJSON = {
-  name: string;
-  id: string;
-  start_time: number;
-  end_time?: number;
-  annotations?: Record<string, string | number | boolean>;
-  metadata?: Record<string, unknown>;
-  subsegments?: SubsegmentJSON[];
-  http?: SegmentHttpJSON;
-  error?: boolean;
-  fault?: boolean;
-  throttle?: boolean;
-};
+export class SegmentCause {
+  exceptions: SegmentExceptionJson[] = [];
 
-/**
- * HTTP segment request.
- */
-export type SegmentHttpRequest = {
-  url?: string;
-  method?: string;
-  userAgent?: string;
-  clientIp?: string;
-  xForwardedFor?: boolean;
-  traced?: boolean;
-};
+  constructor(public directory?: string, public paths?: string[]) {}
 
-/**
- * HTTP segment response.
- */
-export type SegmentHttpResponse = {
-  status?: number;
-  contentLength?: number;
-};
+  /**
+   * Capture an error and any associated `cause`.
+   */
+  captureException(error: Error) {
+    let err = error;
+    let id: string | undefined = undefined;
+
+    while (err instanceof Error) {
+      const exception = captureException(error, id);
+      this.exceptions.push(exception);
+      id = exception.id;
+      err = (err as any).cause;
+    }
+
+    if (this.exceptions.length === 0) {
+      throw new TypeError("Invalid error, should be instance of `Error`");
+    }
+  }
+
+  toJSON(): SegmentCauseJson {
+    return {
+      working_directory: this.directory,
+      paths: this.paths,
+      exceptions: this.exceptions,
+    };
+  }
+}
 
 /**
  * HTTP segment instance.
@@ -122,7 +336,7 @@ export class SegmentHttp {
     public response?: SegmentHttpResponse
   ) {}
 
-  toJSON(): SegmentHttpJSON {
+  toJSON(): SegmentHttpJson {
     return {
       request: this.request
         ? {
@@ -160,21 +374,37 @@ export class Subsegment {
   error?: boolean;
   throttle?: boolean;
   fault?: boolean;
+  cause?: string | SegmentCause;
 
   constructor(public name: string, public traceId: string) {}
 
+  /**
+   * Start a new subsegment.
+   */
   startSegment(name: string): Subsegment {
     const segment = new Subsegment(name, this.traceId);
     this.subsegments.push(segment);
     return segment;
   }
 
+  /**
+   * End the current segment by setting `endTime` to now.
+   */
   end() {
     this.endTime = Date.now();
     return this;
   }
 
-  toJSON(): SubsegmentJSON {
+  /**
+   * Capture the error instance as the cause, enables `error`.
+   */
+  captureException(error: Error, cwd?: string) {
+    this.error = true;
+    this.cause = new SegmentCause(cwd);
+    this.cause.captureException(error);
+  }
+
+  toJSON(): SubsegmentJson {
     if (!this.endTime) throw new SubsegmentNotEndedError(this);
 
     return {
@@ -189,6 +419,11 @@ export class Subsegment {
       error: this.error,
       throttle: this.throttle,
       fault: this.fault,
+      cause: this.cause
+        ? typeof this.cause === "string"
+          ? this.cause
+          : this.cause.toJSON()
+        : undefined,
     };
   }
 }
@@ -204,7 +439,7 @@ export class Segment extends Subsegment {
     super(name, traceId);
   }
 
-  toJSON(): SegmentJSON {
+  toJSON(): SegmentJson {
     return {
       ...super.toJSON(),
       trace_id: this.traceId,
@@ -332,16 +567,63 @@ export function captureFetch(
     try {
       const res = await fetch(request);
       const code = ~~(res.status / 100);
+      const contentLength = res.headers.get("Content-Length");
       segment.error = code === 4;
       segment.fault = code === 5;
       segment.throttle = res.status === 429;
-      segment.http.response = { status: res.status };
+      segment.http.response = {
+        status: res.status,
+        contentLength: (contentLength && Number(contentLength)) || undefined,
+      };
       return res;
     } catch (err) {
-      segment.error = true;
+      segment.captureException(err);
       throw err;
     } finally {
       segment.end();
     }
   };
+}
+
+/**
+ * V8 call site trace.
+ *
+ * Ref: https://v8.dev/docs/stack-trace-api
+ */
+interface CallSite {
+  getThis(): any;
+  getTypeName(): string | null;
+  getFunction(): (...args: any) => any | undefined;
+  getFunctionName(): string | null;
+  getMethodName(): string | null;
+  getFileName(): string | null;
+  getLineNumber(): number | null;
+  getColumnNumber(): number | null;
+  getEvalOrigin(): string | undefined;
+  isToplevel(): boolean;
+  isEval(): boolean;
+  isNative(): boolean;
+  isConstructor(): boolean;
+  isAsync(): boolean;
+  isPromiseAll(): boolean;
+  getPromiseIndex(): number | null;
+}
+
+/**
+ * Parse V8 call sites from error instance.
+ */
+function getErrorStack(error: Error): CallSite[] {
+  const prepareStackTrace = Error.prepareStackTrace;
+  let trace: CallSite[];
+
+  Error.prepareStackTrace = (error, v8Trace) => {
+    trace = v8Trace as CallSite[];
+    return prepareStackTrace?.(error, v8Trace);
+  };
+
+  Error.captureStackTrace(error, getErrorStack);
+  error.stack; // Triggers `prepareStackTrace`.
+  Error.prepareStackTrace = prepareStackTrace;
+
+  return trace!;
 }
