@@ -468,7 +468,7 @@ export class AwsXray {
   fetch: Fetch;
 
   constructor(options: AwsXrayOptions) {
-    this.fetch = options.fetch || globalThis.fetch;
+    this.fetch = options.fetch ?? fetch.bind(null);
     this.region = options.region;
     this.client = new AwsClient({
       accessKeyId: options.accessKeyId,
